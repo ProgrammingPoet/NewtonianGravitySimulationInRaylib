@@ -1,0 +1,7 @@
+﻿C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppBuild.targets(534,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+  Main.cpp
+C:\Users\Muhammad Rayyan\Documents\Programming\NewtonianGravitySimulationInRaylib\GravitySimulator\Main.cpp(58,61): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\Muhammad Rayyan\Documents\Programming\NewtonianGravitySimulationInRaylib\GravitySimulator\Main.cpp(58,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+  GravitySimulator.vcxproj -> C:\Users\Muhammad Rayyan\Documents\Programming\NewtonianGravitySimulationInRaylib\GravitySimulator.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.
