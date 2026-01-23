@@ -94,7 +94,7 @@ int main() {
 		}
 
 		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && NeedVelocity) {
-			ParticleVector.push_back(Particle{ Mass, StartPositionX, StartPositionY, (25 * LengthScale), (EndPositionX - StartPositionX) / TimePassed, (EndPositionY - StartPositionY) / TimePassed, 0, 0, 0, 0});
+			ParticleVector.push_back(Particle{ Mass, StartPositionX, StartPositionY, (25 * LengthScale), ((EndPositionX - StartPositionX) / TimeScale), ((EndPositionY - StartPositionY) / TimeScale), 0, 0, 0, 0 });
 			NeedVelocity = false;
 		}
 
