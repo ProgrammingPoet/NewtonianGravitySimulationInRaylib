@@ -1,6 +1,7 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "raylib.h"
-//#define RAYGUI_IMPLEMENTATION
-//#include "raygui.h"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -23,7 +24,12 @@ struct Particle {
 };
 
 std::vector<Particle> ParticleVector;
+Vector2 PreviousCursorPosition;
+Vector2 CurrentCursorPosition;
 Vector2 CursorPosition;
+int MouseWheelDirection;
+
+
 
 bool NeedVelocity;
 long double StartPositionX;
@@ -45,16 +51,33 @@ long double TotalMass;
 long double Radius;
 long double PositionX;
 long double PositionY;
+long double VelocityX;
+long double VelocityY;
+
+
 
 
 long double LengthScale = 1e9; 
 long double MassScale = 1e20; 
 long double TimeScale = 2.1e7;
+float ZoomStrength = 0.05;
+int SimulationStartX = 20;
+int SimulationStartY = 20;
+int ConfiguratorStartX = 0;
+int ConfiguratorStartY = 0;
+
+
 
 
 
 int main() {
 	InitWindow(1280, 720, "Gravity Sim");
+
+	Camera2D Camera = { 0 };
+	Camera.offset = { (float)SimulationStartX, (float)SimulationStartY };
+	Camera.target = { 0.0f, 0.0f };
+	Camera.rotation = 0.0f;
+	Camera.zoom = 1.0f;
 
 	//SetTargetFPS(60);
 	auto CurrentTime = std::chrono::steady_clock::now();
@@ -63,10 +86,8 @@ int main() {
 	while (WindowShouldClose() != true) {
 
 		if (IsKeyPressed(KEY_SPACE)) {
-			std::cout << "Simulation Is Currently Paused" << std::endl;
-			std::cout << "Enter Mass " << std::endl;
-			std::cin >> Mass;
-
+			ParticleVector.clear();
+			std::cout << "Particle Vector Cleared" << std::endl;
 		}
 
 		auto PreviousTime = CurrentTime;
@@ -79,22 +100,58 @@ int main() {
 		BeginDrawing();
 		ClearBackground(BLACK);
 		DrawFPS(20, 20);
+
 		
+		BeginMode2D(Camera);
+
+		MouseWheelDirection = GetMouseWheelMove();
+
+		/*if (MouseWheelDirection == 1) {
+			CursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.target = { CursorPosition.x, CursorPosition.y };
+			Camera.zoom = Camera.zoom + ZoomStrength;
+		} else if (MouseWheelDirection == -1) {
+			CursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.target = { CursorPosition.x, CursorPosition.y };
+			Camera.zoom = Camera.zoom - ZoomStrength;
+		}*/
+
+		if (MouseWheelDirection == 1) {
+			PreviousCursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.zoom = Camera.zoom + ZoomStrength;
+			if (Camera.zoom < 0) {
+				Camera.zoom = 0.1;
+			}
+			CurrentCursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.target.x = Camera.target.x + (PreviousCursorPosition.x - CurrentCursorPosition.x);
+			Camera.target.y = Camera.target.y + (PreviousCursorPosition.y - CurrentCursorPosition.y);
+
+		} else if (MouseWheelDirection == -1) {
+			PreviousCursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.zoom = Camera.zoom - ZoomStrength;
+			if (Camera.zoom < 0) {
+				Camera.zoom = 0.1;
+			}
+			CurrentCursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
+			Camera.target.x = Camera.target.x + (PreviousCursorPosition.x - CurrentCursorPosition.x);
+			Camera.target.y = Camera.target.y + (PreviousCursorPosition.y - CurrentCursorPosition.y);
+		}
+
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			CursorPosition = GetMousePosition();
+			CursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
 			NeedVelocity = true;
 			StartPositionX = CursorPosition.x * LengthScale;
 			StartPositionY = CursorPosition.y * LengthScale;
 		}
 
 		if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && NeedVelocity) {
-			CursorPosition = GetMousePosition();
+			CursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
 			EndPositionX = CursorPosition.x * LengthScale;
 			EndPositionY = CursorPosition.y * LengthScale;
 		}
 
 		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && NeedVelocity) {
-			ParticleVector.push_back(Particle{ Mass, StartPositionX, StartPositionY, (25 * LengthScale), ((EndPositionX - StartPositionX) / TimeScale), ((EndPositionY - StartPositionY) / TimeScale), 0, 0, 0, 0 });
+			ParticleVector.push_back(Particle{ Mass, StartPositionX, StartPositionY, (20 * LengthScale), ((EndPositionX - StartPositionX) / TimeScale), ((EndPositionY - StartPositionY) / TimeScale), 0, 0, 0, 0 });
 			NeedVelocity = false;
 		}
 
@@ -105,11 +162,15 @@ int main() {
 				if (i == j) continue;
 				Distance = std::sqrt(std::pow((ParticleVector[i].PositionX - ParticleVector[j].PositionX), 2) + std::pow((ParticleVector[i].PositionY - ParticleVector[j].PositionY), 2));
 				if (Distance < (ParticleVector[i].Radius + ParticleVector[j].Radius) / 2) {
+					VelocityX = 0;
+					VelocityY = 0;
 					TotalMass = ParticleVector[i].Mass + ParticleVector[j].Mass;
 					Radius = std::sqrt(((PI * ParticleVector[i].Radius * ParticleVector[i].Radius) + (PI * ParticleVector[j].Radius * ParticleVector[j].Radius)) / PI);
 					PositionX = (ParticleVector[i].PositionX + ParticleVector[j].PositionX) / 2;
 					PositionY = (ParticleVector[i].PositionY + ParticleVector[j].PositionY) / 2;
-					ParticleVector.push_back(Particle{ TotalMass, PositionX, PositionY, Radius, 0, 0, 0, 0, 0, 0 });
+					VelocityX = (ParticleVector[i].Mass * ParticleVector[i].VelocityX + ParticleVector[j].Mass * ParticleVector[j].VelocityX) / TotalMass;
+					VelocityY = (ParticleVector[i].Mass * ParticleVector[i].VelocityY + ParticleVector[j].Mass * ParticleVector[j].VelocityY) / TotalMass;
+					ParticleVector.push_back(Particle{ TotalMass, PositionX, PositionY, Radius, VelocityX, VelocityY, 0, 0, 0, 0 });
 					if (i > j) {
 						ParticleVector.erase(ParticleVector.begin() + i);
 						ParticleVector.erase(ParticleVector.begin() + j);
@@ -181,11 +242,13 @@ int main() {
 		}
 
 		for (int i = 0; i < ParticleVector.size(); i++) {
-			DrawCircle((ParticleVector[i].PositionX / LengthScale), (ParticleVector[i].PositionY / LengthScale), (ParticleVector[i].Radius / LengthScale), WHITE);
+			DrawCircle(((ParticleVector[i].PositionX / LengthScale)), ((ParticleVector[i].PositionY / LengthScale)) , (ParticleVector[i].Radius / LengthScale), WHITE);
 		}
 
 
 		//std::cout << NumberOfMasses << std::endl;
+		EndMode2D();
+
 		EndDrawing();
 	}
 
