@@ -27,6 +27,7 @@ std::vector<Particle> ParticleVector;
 Vector2 PreviousCursorPosition;
 Vector2 CurrentCursorPosition;
 Vector2 CursorPosition;
+Vector2 ScreenCoOrdinates;
 int MouseWheelDirection;
 
 
@@ -61,17 +62,19 @@ long double LengthScale = 1e9;
 long double MassScale = 1e20; 
 long double TimeScale = 2.1e7;
 float ZoomStrength = 0.05;
-int SimulationStartX = 20;
-int SimulationStartY = 20;
+int SimulationStartX = 250;
+int SimulationStartY = 0;
 int ConfiguratorStartX = 0;
 int ConfiguratorStartY = 0;
+int ScreenWidth;
+int ScreenHeight;
 
 
 
 
 
 int main() {
-	InitWindow(1280, 720, "Gravity Sim");
+	InitWindow(1620, 800, "Gravity Simulator");
 
 	Camera2D Camera = { 0 };
 	Camera.offset = { (float)SimulationStartX, (float)SimulationStartY };
@@ -84,6 +87,11 @@ int main() {
 
 	
 	while (WindowShouldClose() != true) {
+
+		ScreenWidth = GetScreenWidth();
+		ScreenHeight = GetScreenHeight();
+
+
 
 		if (IsKeyPressed(KEY_SPACE)) {
 			ParticleVector.clear();
@@ -99,7 +107,22 @@ int main() {
 
 		BeginDrawing();
 		ClearBackground(BLACK);
-		DrawFPS(20, 20);
+		DrawFPS((SimulationStartX + 20), (SimulationStartY + 20));
+
+		//GuiGetState() == STATE_PRESSED
+
+		DrawRectangle(ConfiguratorStartX, ConfiguratorStartY, (SimulationStartX - ConfiguratorStartX), ScreenHeight, GRAY);
+		GuiSetStyle(DEFAULT, TEXT_SIZE, 30); // Only labels
+		GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, 0x000000FF); // black
+		GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+		GuiLabel(Rectangle{ (float)ConfiguratorStartX,(float)(ConfiguratorStartY + 15),(float)SimulationStartX,15 }, "Gravity Simulator");
+		if (GuiButton(Rectangle { (float)(ConfiguratorStartX + 20), 70, (float)(SimulationStartX - 20*2), 50 }, "RESET")) {
+			ParticleVector.clear();
+			std::cout << "Particle Vector Cleared" << std::endl;
+		}
+
+
+
 
 		
 		BeginMode2D(Camera);
@@ -137,7 +160,7 @@ int main() {
 			Camera.target.y = Camera.target.y + (PreviousCursorPosition.y - CurrentCursorPosition.y);
 		}
 
-		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && GetMousePosition().x > SimulationStartX) {
 			CursorPosition = GetScreenToWorld2D(GetMousePosition(), Camera);
 			NeedVelocity = true;
 			StartPositionX = CursorPosition.x * LengthScale;
@@ -242,7 +265,10 @@ int main() {
 		}
 
 		for (int i = 0; i < ParticleVector.size(); i++) {
-			DrawCircle(((ParticleVector[i].PositionX / LengthScale)), ((ParticleVector[i].PositionY / LengthScale)) , (ParticleVector[i].Radius / LengthScale), WHITE);
+			Vector2 Particle = { ParticleVector[i].PositionX/LengthScale,ParticleVector[i].PositionY/LengthScale };
+			if ((GetWorldToScreen2D(Particle, Camera).x > SimulationStartX) && (GetWorldToScreen2D(Particle, Camera).y > SimulationStartY)) {
+				DrawCircle(((ParticleVector[i].PositionX / LengthScale)), ((ParticleVector[i].PositionY / LengthScale)), (ParticleVector[i].Radius / LengthScale), WHITE);
+			}
 		}
 
 
